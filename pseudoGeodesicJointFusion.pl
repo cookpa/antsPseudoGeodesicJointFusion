@@ -118,8 +118,8 @@ GetOptions ("input-image=s" => \$inputImage,
 	    "output-root=s" => \$outputRoot,
 	    "atlas-label-interpolation=s" => \$atlasLabelInterp,
 	    "jlf-majority-thresh=f" => \$jlfMajorityThresh,
-	    "majority-vote" => \$outputMajorityVote,
-	    "jlf" => \$outputJLF
+	    "majority-vote=i" => \$outputMajorityVote,
+	    "jlf=i" => \$outputJLF
 
     )
     or die("Error in command line arguments\n");
