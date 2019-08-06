@@ -273,6 +273,5 @@ system("cp $refImage ${outputDir}/${outputFileRoot}Brain.nii.gz");
 
 
 # Clean up
-
-# system("rm -f ${tmpDir}/*");
-# system("rmdir $tmpDir");
+system("rm -f ${tmpDir}/*");
+system("rmdir $tmpDir");
