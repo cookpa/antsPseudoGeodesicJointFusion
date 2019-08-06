@@ -31,7 +31,6 @@ my $usage = qq{
 
   $0 
      --input-image
-     --input-mask
      --template-to-subject-warp-prefix
      --atlas-dir
      --output-root
@@ -60,10 +59,6 @@ my $usage = qq{
     --input-image
       Head or brain image to be labeled. 
 
-    --input-mask
-      A mask in which labeling is performed. If not provided, it is defined from the atlas 
-      segmentations.
-
     --template-to-subject-warp-string
       A string passed to antsApplyTransforms to warp the template to the subject.
        
@@ -75,6 +70,10 @@ my $usage = qq{
 
 
   Options:
+
+    --input-mask
+      A mask in which labeling is performed. If not provided, it is defined from the atlas 
+      segmentations.
 
     --majority-vote
       Do majority voting, less accurate but much faster than JLF (default = $outputMajorityVote). 
@@ -155,7 +154,10 @@ my $refImage="${tmpDir}/${outputFileRoot}ImageToLabel.nii.gz";
 my $refMask = "${tmpDir}/${outputFileRoot}Mask.nii.gz";
 
 system("cp $inputImage $refImage");
-system("cp $inputMask $refMask");
+
+if (-f $inputMask) {
+    system("cp $inputMask $refMask");
+}
 
 # Assume atlases of the form ${id}.nii.gz ${id}_seg.nii.gz
 
@@ -211,6 +213,26 @@ foreach my $atlasSubj (@atlasSubjects) {
 
 }
 
+if (! -f $refMask) {
+
+    # No user supplied mask, create one from the union of all atlas masks
+    
+    my $numAtlases = scalar(@segImagesSubjSpace);
+    
+    print "\n No brain mask defined, creating mask from binarized atlas segmentations\n";
+    
+    # Tempting to do addtozero iteratively, but this is dangerous because of header drift
+
+    for (my $counter = 0; $counter < $numAtlases; $counter++) { 
+	system("${antsPath}ThresholdImage 3 $segImagesSubjSpace[$counter] ${tmpDir}/atlasSegBinarized_${counter}.nii.gz 1 Inf");
+    }
+
+    system("${antsPath}AverageImages 3 ${tmpDir}/averageAtlasSegBinarized.nii.gz 0 ${tmpDir}/atlasSegBinarized_*.nii.gz");
+
+    system("${antsPath}ThresholdImage 3 ${tmpDir}/averageAtlasSegBinarized.nii.gz $refMask 1E-6 Inf");
+    
+}
+
 print "\n  Labeling with " . scalar(@grayImagesSubjSpace) . " atlases \n";
 
 if ($outputMajorityVote) {
@@ -252,5 +274,5 @@ system("cp $refImage ${outputDir}/${outputFileRoot}Brain.nii.gz");
 
 # Clean up
 
-system("rm -f ${tmpDir}/*");
-system("rmdir $tmpDir");
+# system("rm -f ${tmpDir}/*");
+# system("rmdir $tmpDir");
